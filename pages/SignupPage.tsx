@@ -11,6 +11,7 @@ import { LoadingButton } from '@mui/lab'
 import InputField from '../components/InputField'
 import { Button, IconButton, InputAdornment } from '@mui/material'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
+import { Helmet } from 'react-helmet-async'
 
 interface FormData {
   username: string
@@ -50,54 +51,60 @@ const Signup = () => {
     registerMutation.mutate(data)
   })
   return (
-    <Box component='form' noValidate onSubmit={onsubmit}>
-      <Stack spacing={3}>
-        <InputField
-          type='text'
-          placeholder='Username'
-          name='username'
-          fullWidth
-          control={control}
-          color='success'
-          label='Username'
-        />
+    <>
+      <Helmet>
+        <title>Register Page</title>
+        <meta name='description' content='Register Page - Chat Bot AI' />
+      </Helmet>
+      <Box component='form' noValidate onSubmit={onsubmit}>
+        <Stack spacing={3}>
+          <InputField
+            type='text'
+            placeholder='Username'
+            name='username'
+            fullWidth
+            control={control}
+            color='success'
+            label='Username'
+          />
 
-        <InputField
-          name='password'
-          label='Password'
-          control={control}
-          color='success'
-          placeholder='Password'
-          type={showPassword ? 'text' : 'password'}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position='end'>
-                <IconButton
-                  aria-label='toggle password visibility'
-                  onClick={() => setShowPassword(!showPassword)}
-                  edge='end'
-                >
-                  {showPassword ? <VisibilityOff /> : <Visibility />}
-                </IconButton>
-              </InputAdornment>
-            )
-          }}
-        />
+          <InputField
+            name='password'
+            label='Password'
+            control={control}
+            color='success'
+            placeholder='Password'
+            type={showPassword ? 'text' : 'password'}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position='end'>
+                  <IconButton
+                    aria-label='toggle password visibility'
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge='end'
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
+          />
 
-        <LoadingButton
-          type='submit'
-          size='large'
-          variant='contained'
-          loading={registerMutation.isLoading}
-          color='success'
-        >
-          signup
-        </LoadingButton>
-        <Button component={Link} to='/login' size='small'>
-          signin
-        </Button>
-      </Stack>
-    </Box>
+          <LoadingButton
+            type='submit'
+            size='large'
+            variant='contained'
+            loading={registerMutation.isLoading}
+            color='success'
+          >
+            register
+          </LoadingButton>
+          <Button component={Link} to='/login' size='small'>
+            login
+          </Button>
+        </Stack>
+      </Box>
+    </>
   )
 }
 

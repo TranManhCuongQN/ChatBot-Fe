@@ -10,6 +10,7 @@ import { CircularProgress, FormControl, IconButton, OutlinedInput, Typography } 
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
 import TypeWriter from 'typewriter-effect'
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined'
+import { Helmet } from 'react-helmet-async'
 
 const messageType = {
   answer: 'answer',
@@ -64,134 +65,143 @@ const HomePage = () => {
       }
     }, 200)
   }, [])
-  return (
-    <Stack alignItems='center' justifyContent='space-between' sx={{ height: '100%' }}>
-      <Header bg borderBottom>
-        <Box
-          sx={{
-            width: '100%',
-            height: '100%',
-            position: 'relative',
-            paddingX: 2,
-            maxWidth: 'md'
-          }}
-        >
-          <Typography
-            variant='h6'
-            fontWeight='700'
-            sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)'
-            }}
-          >
-            {username}
-          </Typography>
-          <IconButton
-            onClick={onSignOut}
-            sx={{
-              position: 'absolute',
-              top: '50%',
-              right: '16px',
-              transform: 'translateY(-50%)'
-            }}
-          >
-            <LogoutOutlinedIcon />
-          </IconButton>
-        </Box>
-      </Header>
 
-      <Box
-        ref={chatWrapperRef}
-        sx={{
-          height: '100%',
-          position: 'fixed',
-          zIndex: 1,
-          maxWidth: 'md',
-          width: '100%',
-          overflowY: 'auto',
-          paddingTop: '60px',
-          paddingBottom: '90px',
-          '&::-webkit-scrollbar': {
-            width: '0px'
-          }
-        }}
-      >
+  return (
+    <>
+      <Helmet>
+        <title>Chat Page</title>
+        <meta name='description' content='Chat Page - Chat Bot AI' />
+      </Helmet>
+      <Stack alignItems='center' justifyContent='space-between' sx={{ height: '100%' }}>
+        <Header bg borderBottom>
+          <Box
+            sx={{
+              width: '100%',
+              height: '100%',
+              position: 'relative',
+              paddingX: 2,
+              maxWidth: 'md'
+            }}
+          >
+            <Typography
+              variant='h6'
+              fontWeight='700'
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)'
+              }}
+            >
+              {username}
+            </Typography>
+            <IconButton
+              onClick={onSignOut}
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                right: '16px',
+                transform: 'translateY(-50%)'
+              }}
+            >
+              <LogoutOutlinedIcon />
+            </IconButton>
+          </Box>
+        </Header>
+
         <Box
+          ref={chatWrapperRef}
           sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-end',
+            height: '100%',
+            position: 'fixed',
+            zIndex: 1,
             maxWidth: 'md',
-            width: '100%'
+            width: '100%',
+            overflowY: 'auto',
+            paddingTop: '60px',
+            paddingBottom: '90px',
+            '&::-webkit-scrollbar': {
+              width: '0px'
+            }
           }}
         >
-          {messages.map((item, index) => (
-            <Box key={index} padding={1}>
-              <Box
-                sx={{
-                  padding: 2,
-                  bgcolor: item.type === messageType.answer ? '#2f2f2f' : 'initial',
-                  borderRadius: 3
-                }}
-              >
-                {index === messages.length - 1 ? (
-                  item.type === messageType.answer ? (
-                    <TypeWriter
-                      onInit={(writer) => {
-                        writer
-                          .typeString(item.content)
-                          .callFunction(() => {
-                            setTimeout(() => {
-                              ;(inputRef.current as HTMLElement).focus()
-                            }, 200)
-                          })
-                          .changeDelay(50)
-                          .start()
-                      }}
-                    />
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'flex-end',
+              maxWidth: 'md',
+              width: '100%'
+            }}
+          >
+            {messages.map((item, index) => (
+              <Box key={index} padding={1}>
+                <Box
+                  sx={{
+                    padding: 2,
+                    bgcolor: item.type === messageType.answer ? '#2f2f2f' : 'initial',
+                    borderRadius: 3
+                  }}
+                >
+                  {index === messages.length - 1 ? (
+                    item.type === messageType.answer ? (
+                      <TypeWriter
+                        onInit={(writer) => {
+                          writer
+                            .typeString(item.content)
+                            .callFunction(() => {
+                              ;(document.querySelector('.Typewriter__cursor') as HTMLElement).style.display = 'none'
+
+                              setTimeout(() => {
+                                ;(inputRef.current as HTMLInputElement).focus()
+                              }, 100)
+                            })
+                            .changeDelay(5)
+                            .start()
+                        }}
+                      />
+                    ) : (
+                      item.content
+                    )
                   ) : (
                     item.content
-                  )
-                ) : (
-                  item.content
-                )}
+                  )}
+                </Box>
               </Box>
-            </Box>
-          ))}
+            ))}
+          </Box>
         </Box>
-      </Box>
 
-      <Stack
-        width='100%'
-        alignItems='center'
-        justifyContent='center'
-        borderTop='1px solid #2c2c2c'
-        bgcolor='#000'
-        zIndex={3}
-      >
-        <Box padding={2} width='100%' maxWidth='md'>
-          <FormControl fullWidth variant='outlined'>
-            <OutlinedInput
-              inputRef={inputRef}
-              sx={{
-                '& .MuiOutlinedInput-notchedOutline': {
-                  border: 'none'
-                }
-              }}
-              endAdornment={chatMutation.isLoading ? <CircularProgress size='1.5rem' /> : <SendOutlinedIcon />}
-              disabled={chatMutation.isLoading}
-              autoFocus
-              onKeyUp={onEnterPress}
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder='Ask something...'
-            />
-          </FormControl>
-        </Box>
+        <Stack
+          width='100%'
+          alignItems='center'
+          justifyContent='center'
+          borderTop='1px solid #2c2c2c'
+          bgcolor='#000'
+          zIndex={3}
+        >
+          <Box padding={2} width='100%' maxWidth='md'>
+            <FormControl fullWidth variant='outlined'>
+              <OutlinedInput
+                inputRef={inputRef}
+                sx={{
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    border: 'none'
+                  }
+                }}
+                endAdornment={chatMutation.isLoading ? <CircularProgress size='1.5rem' /> : <SendOutlinedIcon />}
+                disabled={chatMutation.isLoading}
+                autoFocus
+                onKeyUp={onEnterPress}
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder='Ask something...'
+              />
+            </FormControl>
+          </Box>
+        </Stack>
       </Stack>
-    </Stack>
+    </>
   )
 }
 
