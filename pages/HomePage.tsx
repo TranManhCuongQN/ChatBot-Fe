@@ -264,7 +264,16 @@ const HomePage = () => {
                   >
                     {index === messagesImage.length - 1 ? (
                       item.type === messageType.answer ? (
-                        <img src={item.content} alt='img AI' />
+                        <img
+                          src={item.content}
+                          alt='img AI'
+                          width='100%'
+                          style={{
+                            objectFit: 'cover',
+                            objectPosition: 'center',
+                            borderRadius: '5px'
+                          }}
+                        />
                       ) : (
                         item.content
                       )
