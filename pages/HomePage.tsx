@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react'
 import { useMutation } from 'react-query'
 import { useNavigate } from 'react-router-dom'
-import { chatCompletion } from '../api/chat.api'
+import { chatCompletion, chatCreateImage } from '../api/chat.api'
 import { toast } from 'react-toastify'
 import { Box, Stack } from '@mui/system'
 import Header from '../components/Header'
@@ -11,6 +11,10 @@ import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
 import TypeWriter from 'typewriter-effect'
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined'
 import { Helmet } from 'react-helmet-async'
+import Button from '@mui/material/Button'
+import Menu from '@mui/material/Menu'
+import MenuItem from '@mui/material/MenuItem'
+import PopupState, { bindTrigger, bindMenu } from 'material-ui-popup-state'
 
 const messageType = {
   answer: 'answer',
@@ -22,13 +26,26 @@ const HomePage = () => {
   const navigate = useNavigate()
   const inputRef = React.useRef<HTMLInputElement>(null)
   const chatWrapperRef = React.useRef<HTMLDivElement>(null)
-  const [messages, setMessages] = React.useState<{ type: string; content: string }[]>([])
+  const [messagesText, setMessagesText] = React.useState<{ type: string; content: string }[]>([])
+  const [messagesImage, setMessagesImage] = React.useState<{ type: string; content: string }[]>([])
   const [question, setQuestion] = React.useState<string>('')
+  const [options, setOptions] = React.useState<string>('Text')
 
   const chatMutation = useMutation({
     mutationFn: () => chatCompletion({ prompt: question }),
     onSuccess: (res) => {
-      setMessages((messages) => [...messages, { type: messageType.answer, content: res.data.text }])
+      setMessagesText((messages) => [...messages, { type: messageType.answer, content: res.data.text }])
+    },
+    onError: (err: any) => {
+      toast.dismiss()
+      toast.error(err.message)
+    }
+  })
+
+  const chatCreateImageMutation = useMutation({
+    mutationFn: () => chatCreateImage({ prompt: question }),
+    onSuccess: (res) => {
+      setMessagesImage((messages) => [...messages, { type: messageType.answer, content: res.data.image }])
     },
     onError: (err: any) => {
       toast.dismiss()
@@ -38,9 +55,17 @@ const HomePage = () => {
 
   const getAnswer = () => {
     if (chatMutation.isLoading) return
-    setMessages((messages) => [...messages, { type: messageType.question, content: question }])
-    setQuestion('')
-    chatMutation.mutate()
+    if (chatCreateImageMutation.isLoading) return
+    if (options === 'Text') {
+      setMessagesText((messages) => [...messages, { type: messageType.question, content: question }])
+      setQuestion('')
+      chatMutation.mutate()
+    }
+    if (options === 'Image') {
+      setMessagesImage((messages) => [...messages, { type: messageType.question, content: question }])
+      setQuestion('')
+      chatCreateImageMutation.mutate()
+    }
   }
 
   const onEnterPress = (e: any) => {
@@ -83,6 +108,62 @@ const HomePage = () => {
               maxWidth: 'md'
             }}
           >
+            <Box
+              sx={{
+                marginTop: '10px'
+              }}
+            >
+              <PopupState variant='popover' popupId='demo-popup-menu'>
+                {(popupState) => (
+                  <React.Fragment>
+                    <Button
+                      variant='contained'
+                      {...bindTrigger(popupState)}
+                      sx={{
+                        fontWeight: '700',
+                        textTransform: 'revert-layer'
+                      }}
+                    >
+                      Option: {options}
+                    </Button>
+                    <Menu
+                      {...bindMenu(popupState)}
+                      sx={{
+                        '& .MuiPaper-root': {
+                          marginTop: '5px',
+                          width: '135px'
+                        }
+                      }}
+                    >
+                      <MenuItem
+                        onClick={() => {
+                          setOptions('Text')
+                          popupState.close()
+                        }}
+                      >
+                        Text
+                      </MenuItem>
+                      <MenuItem
+                        onClick={() => {
+                          setOptions('Image')
+                          popupState.close()
+                        }}
+                      >
+                        Image
+                      </MenuItem>
+                      <MenuItem
+                        onClick={() => {
+                          setOptions('Audio')
+                          popupState.close()
+                        }}
+                      >
+                        Audio
+                      </MenuItem>
+                    </Menu>
+                  </React.Fragment>
+                )}
+              </PopupState>
+            </Box>
             <Typography
               variant='h6'
               fontWeight='700'
@@ -90,7 +171,8 @@ const HomePage = () => {
                 position: 'absolute',
                 top: '50%',
                 left: '50%',
-                transform: 'translate(-50%, -50%)'
+                transform: 'translate(-50%, -50%)',
+                display: { sm: 'block', xs: 'none' }
               }}
             >
               {username}
@@ -134,41 +216,64 @@ const HomePage = () => {
               width: '100%'
             }}
           >
-            {messages.map((item, index) => (
-              <Box key={index} padding={1}>
-                <Box
-                  sx={{
-                    padding: 2,
-                    bgcolor: item.type === messageType.answer ? '#2f2f2f' : 'initial',
-                    borderRadius: 3
-                  }}
-                >
-                  {index === messages.length - 1 ? (
-                    item.type === messageType.answer ? (
-                      <TypeWriter
-                        onInit={(writer) => {
-                          writer
-                            .typeString(item.content)
-                            .callFunction(() => {
-                              ;(document.querySelector('.Typewriter__cursor') as HTMLElement).style.display = 'none'
+            {options === 'Text' &&
+              messagesText.map((item, index) => (
+                <Box key={index} padding={1}>
+                  <Box
+                    sx={{
+                      padding: 2,
+                      bgcolor: item.type === messageType.answer ? '#2f2f2f' : 'initial',
+                      borderRadius: 3
+                    }}
+                  >
+                    {index === messagesText.length - 1 ? (
+                      item.type === messageType.answer ? (
+                        <TypeWriter
+                          onInit={(writer) => {
+                            writer
+                              .typeString(item.content)
+                              .callFunction(() => {
+                                ;(document.querySelector('.Typewriter__cursor') as HTMLElement).style.display = 'none'
 
-                              setTimeout(() => {
-                                ;(inputRef.current as HTMLInputElement).focus()
-                              }, 100)
-                            })
-                            .changeDelay(5)
-                            .start()
-                        }}
-                      />
+                                setTimeout(() => {
+                                  ;(inputRef.current as HTMLInputElement).focus()
+                                }, 100)
+                              })
+                              .changeDelay(5)
+                              .start()
+                          }}
+                        />
+                      ) : (
+                        item.content
+                      )
                     ) : (
                       item.content
-                    )
-                  ) : (
-                    item.content
-                  )}
+                    )}
+                  </Box>
                 </Box>
-              </Box>
-            ))}
+              ))}
+            {options === 'Image' &&
+              messagesImage.map((item, index) => (
+                <Box key={index} padding={1}>
+                  <Box
+                    sx={{
+                      padding: 2,
+                      bgcolor: item.type === messageType.answer ? '#2f2f2f' : 'initial',
+                      borderRadius: 3
+                    }}
+                  >
+                    {index === messagesImage.length - 1 ? (
+                      item.type === messageType.answer ? (
+                        <img src={item.content} alt='img AI' />
+                      ) : (
+                        item.content
+                      )
+                    ) : (
+                      item.content
+                    )}
+                  </Box>
+                </Box>
+              ))}
           </Box>
         </Box>
 
@@ -190,7 +295,7 @@ const HomePage = () => {
                   }
                 }}
                 endAdornment={chatMutation.isLoading ? <CircularProgress size='1.5rem' /> : <SendOutlinedIcon />}
-                disabled={chatMutation.isLoading}
+                disabled={chatMutation.isLoading || chatCreateImageMutation.isLoading}
                 autoFocus
                 onKeyUp={onEnterPress}
                 value={question}
