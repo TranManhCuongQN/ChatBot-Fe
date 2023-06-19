@@ -2,11 +2,11 @@
 import React, { useEffect } from 'react'
 import { useMutation } from 'react-query'
 import { useNavigate } from 'react-router-dom'
-import { chatCompletion, chatCreateImage } from '../api/chat.api'
+import { chatCompletion, chatCreateImage, chatCreateTranscription } from '../api/chat.api'
 import { toast } from 'react-toastify'
 import { Box, Stack } from '@mui/system'
 import Header from '../components/Header'
-import { CircularProgress, FormControl, IconButton, OutlinedInput, Typography } from '@mui/material'
+import { CircularProgress, FormControl, IconButton, OutlinedInput, Tooltip, Typography } from '@mui/material'
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
 import TypeWriter from 'typewriter-effect'
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined'
@@ -15,6 +15,7 @@ import Button from '@mui/material/Button'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import PopupState, { bindTrigger, bindMenu } from 'material-ui-popup-state'
+import AttachmentOutlinedIcon from '@mui/icons-material/AttachmentOutlined'
 
 const messageType = {
   answer: 'answer',
@@ -25,10 +26,13 @@ const HomePage = () => {
 
   const navigate = useNavigate()
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const inputFileRef = React.useRef<HTMLInputElement>(null)
   const chatWrapperRef = React.useRef<HTMLDivElement>(null)
   const [messagesText, setMessagesText] = React.useState<{ type: string; content: string }[]>([])
   const [messagesImage, setMessagesImage] = React.useState<{ type: string; content: string }[]>([])
+  const [messagesAudio, setMessagesAudio] = React.useState<{ type: string; content: string }[]>([])
   const [question, setQuestion] = React.useState<string>('')
+  const [questionAudio, setQuestionAudio] = React.useState<File | undefined>(undefined)
   const [options, setOptions] = React.useState<string>('Text')
 
   const chatMutation = useMutation({
@@ -53,6 +57,18 @@ const HomePage = () => {
     }
   })
 
+  const chatCreateAudioMutation = useMutation({
+    mutationFn: () => chatCreateTranscription({ prompt: questionAudio as File }),
+    onSuccess: (res) => {
+      setMessagesAudio((messages) => [...messages, { type: messageType.answer, content: res.data.text }])
+      setQuestionAudio(undefined)
+    },
+    onError: (err: any) => {
+      toast.dismiss()
+      toast.error(err.message)
+    }
+  })
+
   const getAnswer = () => {
     if (chatMutation.isLoading) return
     if (chatCreateImageMutation.isLoading) return
@@ -66,6 +82,24 @@ const HomePage = () => {
       setQuestion('')
       chatCreateImageMutation.mutate()
     }
+    if (options === 'Audio') {
+      if (!questionAudio) {
+        toast.dismiss()
+        toast.error('Please upload audio file')
+        return
+      }
+      chatCreateAudioMutation.mutate()
+    }
+  }
+
+  const onUploadAudio = (e: any) => {
+    const file = e.target.files[0]
+    if (!file) {
+      toast.dismiss()
+      toast.error('Please upload audio file')
+      return
+    }
+    setQuestionAudio(file)
   }
 
   const onEnterPress = (e: any) => {
@@ -283,6 +317,42 @@ const HomePage = () => {
                   </Box>
                 </Box>
               ))}
+            {options === 'Audio' &&
+              messagesAudio.map((item, index) => (
+                <Box key={index} padding={1}>
+                  <Box
+                    sx={{
+                      padding: 2,
+                      bgcolor: item.type === messageType.answer ? '#2f2f2f' : 'initial',
+                      borderRadius: 3
+                    }}
+                  >
+                    {index === messagesAudio.length - 1 ? (
+                      item.type === messageType.answer ? (
+                        <TypeWriter
+                          onInit={(writer) => {
+                            writer
+                              .typeString(item.content)
+                              .callFunction(() => {
+                                ;(document.querySelector('.Typewriter__cursor') as HTMLElement).style.display = 'none'
+
+                                setTimeout(() => {
+                                  ;(inputRef.current as HTMLInputElement).focus()
+                                }, 100)
+                              })
+                              .changeDelay(5)
+                              .start()
+                          }}
+                        />
+                      ) : (
+                        item.content
+                      )
+                    ) : (
+                      item.content
+                    )}
+                  </Box>
+                </Box>
+              ))}
           </Box>
         </Box>
 
@@ -294,8 +364,45 @@ const HomePage = () => {
           bgcolor='#000'
           zIndex={3}
         >
-          <Box padding={2} width='100%' maxWidth='md'>
-            <FormControl fullWidth variant='outlined'>
+          <Box
+            padding={2}
+            width='100%'
+            maxWidth='md'
+            flexDirection='row'
+            alignItems='center'
+            justifyContent='center'
+            display='flex'
+            columnGap={3}
+          >
+            {options === 'Audio' && (
+              <>
+                <input
+                  type='file'
+                  ref={inputFileRef}
+                  accept='.m4a,.mp3,.webm,.mp4,.mpga,.wav,.mpeg'
+                  style={{
+                    display: 'none'
+                  }}
+                  onChange={onUploadAudio}
+                />
+                <Tooltip title='Attach file mp3, mp4' placement='top'>
+                  <IconButton
+                    onClick={() => {
+                      ;(inputFileRef.current as HTMLInputElement).click()
+                    }}
+                  >
+                    <AttachmentOutlinedIcon />
+                  </IconButton>
+                </Tooltip>
+              </>
+            )}
+
+            <FormControl
+              variant='outlined'
+              sx={{
+                flexGrow: 1
+              }}
+            >
               <OutlinedInput
                 inputRef={inputRef}
                 sx={{
@@ -303,8 +410,16 @@ const HomePage = () => {
                     border: 'none'
                   }
                 }}
-                endAdornment={chatMutation.isLoading ? <CircularProgress size='1.5rem' /> : <SendOutlinedIcon />}
-                disabled={chatMutation.isLoading || chatCreateImageMutation.isLoading}
+                endAdornment={
+                  chatMutation.isLoading || chatCreateImageMutation.isLoading || chatCreateAudioMutation.isLoading ? (
+                    <CircularProgress size='1.5rem' />
+                  ) : (
+                    <SendOutlinedIcon />
+                  )
+                }
+                disabled={
+                  chatMutation.isLoading || chatCreateImageMutation.isLoading || chatCreateAudioMutation.isLoading
+                }
                 autoFocus
                 onKeyUp={onEnterPress}
                 value={question}
