@@ -15,5 +15,7 @@
 ### Achieved results
 ##### Text-to-Text Transformation
 ![Text-to-Text Transformation](https://res.cloudinary.com/dnmazjnlr/image/upload/v1687150400/%E1%BA%A3nh%20chat/chat_text_t6khqx.png)
+#####  Text-to-Image Transformation
 ![Text-to-Image Transformation](https://res.cloudinary.com/dnmazjnlr/image/upload/v1687150399/%E1%BA%A3nh%20chat/chat_image_mh9ydy.png)
+##### Audio-to-Text Transformation
 ![Audio-to-Text Transformation](https://res.cloudinary.com/dnmazjnlr/image/upload/v1687152005/%E1%BA%A3nh%20chat/chat_audio_ekzxux.png)
